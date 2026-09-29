@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "vsa-core: ternary vector symbolic architecture kernel and shared-memory blackboard"
+version: 0.1.0
+abstract: "Ternary VSA kernel (bit-sliced bind/bundle, phase layer) and a seqlock shared-memory bus with a slot registry, for agents on commodity CPUs. Published as prior art."
+authors:
+  - family-names: "De Santiago"
+    given-names: "Juan Carlos"
+license:
+  - PolyForm-Small-Business-1.0.0
+  - PolyForm-Noncommercial-1.0.0
+keywords: [vector symbolic architecture, ternary, shared memory, blackboard, SIMD]
