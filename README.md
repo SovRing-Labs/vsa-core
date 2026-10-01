@@ -116,3 +116,7 @@ verifies; it does not generate. Authoritative state stays in SQLite, where
 ## Licence and provenance
 
 PolyForm Small Business 1.0.0 or PolyForm Noncommercial 1.0.0, your choice (`LICENSING.md`); data and shards: `DATA-AND-SHARDS.md`, `SHARD-FORMAT.md`. Cited prior art, patent design-around and checks: `PROVENANCE.md`. How it works, in full: `TECHNICAL-DISCLOSURE.md`.
+
+## Dossier
+
+History, specification, metrics, tests and limits: [`DOSSIER.md`](DOSSIER.md). Guide to the whole stack: [Hyperdimensional Computing and You](https://github.com/SovRing-Labs/omniring-research/blob/main/docs/guide/HYPERDIMENSIONAL-COMPUTING-AND-YOU.md).
