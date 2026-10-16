@@ -1,0 +1,186 @@
+{
+  "_about": {
+    "repo": "vsa-core",
+    "url": "https://github.com/SovRing-Labs/vsa-core",
+    "one_line": "Ternary vector-symbolic kernel (10,240-dim, two bitplanes) and a POSIX shared-memory blackboard with a seqlock, AVX2 SIMD, phase kernel and trust classifier; C/C++ with a Python client.",
+    "quicktest": "D=$(mktemp -d); trap 'rm -rf $D' EXIT; gcc -O2 -mavx2 -std=gnu11 -c vsa_kernel.c -o $D/k.o && g++ -O2 -mavx2 -std=c++17 -o $D/s vsa_stochastic_test.cpp $D/k.o && $D/s > $D/o.log && acc=$(awk -F'\\t' '/^1000\\t/{gsub(/%/,\"\",$NF);print $NF}' $D/o.log) && awk -v a=$acc 'BEGIN{exit !(a>=99.0)}' && echo \"stochastic OK accuracy@1000=${acc}% target_active=$(grep -o 'active dimensions = [0-9]*' $D/o.log | grep -o '[0-9]*$')\"",
+    "quicktest_s": 10,
+    "licence": "PolyForm Small Business 1.0.0 / PolyForm Noncommercial 1.0.0 (LICENSING.md); PolyForm Free Trial for evaluation",
+    "status_file": "STATUS.md",
+    "generated": "2026-10-16",
+    "schema": 1,
+    "source": "README.md, DOSSIER.md (Metrics, Tests), Makefile `test` target and the root test sources (vsa_stochastic_test.cpp, vsa_trust_test.c, vsa_bus_test.c, vsa_bundle_bench.c, vsa_phase_int8_test.c, xlang_test.py). The repo has no tests/ directory yet: the proposed tests/ folder (run_tests.sh + README.md) is in projects/repo-access/suites/vsa-core/proposed-tests/ and is not pushed. The verify commands here compile the root sources directly, so they work on the current clone.",
+    "quicktest_after_tests_dir": "bash tests/run_tests.sh  (once the proposed tests/ folder is pushed)"
+  },
+  "tests": [
+    {
+      "id": "V1",
+      "title": "5-bit stochastic ternary learner converges on a noisy target (C++)",
+      "claim": "vsa_stochastic_test (listed as a component test in DOSSIER.md): a 5-bit learner (2-bit ternary weight + 3-bit confidence per dimension, 10,240 dims) fed a target with 15% noise for 1,000 steps ends matching the target's 5,128 active dimensions at >= 99%",
+      "kind": "run",
+      "verify": "D=$(mktemp -d); trap 'rm -rf $D' EXIT; gcc -O2 -mavx2 -std=gnu11 -c vsa_kernel.c -o $D/k.o && g++ -O2 -mavx2 -std=c++17 -o $D/s vsa_stochastic_test.cpp $D/k.o && $D/s > $D/o.log && acc=$(awk -F'\\t' '/^1000\\t/{gsub(/%/,\"\",$NF);print $NF}' $D/o.log) && awk -v a=$acc 'BEGIN{exit !(a>=99.0)}' && echo \"stochastic OK accuracy@1000=${acc}% target_active=$(grep -o 'active dimensions = [0-9]*' $D/o.log | grep -o '[0-9]*$')\"",
+      "expect": "stochastic OK accuracy@1000=99.96% target_active=5128 (rand()-seeded; the last digits can differ by libc)",
+      "evidence": [
+        "vsa_stochastic_test.cpp",
+        "vsa_stochastic.h",
+        "vsa_kernel.h",
+        "DOSSIER.md"
+      ],
+      "runtime_s": 10,
+      "needs": [
+        "gcc",
+        "g++ (C++17)",
+        "x86-64 with AVX2"
+      ],
+      "what_it_means": "A learner that holds, for each of 10,240 dimensions, a ternary weight and a small confidence counter is shown noisy copies of one target hypervector (15% of dimensions flipped each time) and nudged with probability 40%. The test prints how much of the target's 5,128 active dimensions the learner reproduces every 100 steps; it reaches 100% by step 100 and stays at 99.96-100%. Passing proves this update rule learns a single fixed target under that noise with no gradients. It does not show learning of many items, drifting targets, or any task beyond reproducing one vector.",
+      "how_we_got_it": "vsa_stochastic_test.cpp with vsa_stochastic.h on top of vsa_kernel.c (compiled as C, then linked: g++ rejects _Thread_local in vsa_kernel.c). Fixed seeds (xorshift seed 0x123456789ABCDEF0, srand(42)). The binary was run on 2026-10-16 on the verification host (AVX2; its CPU model is not recorded here). The program prints the table; the verify command extracts the accuracy at step 1000 and requires >= 99%. The program also prints a per-update time, which was not asserted because it varies with machine load (1,767 microseconds per update on the loaded verification host) and the repo has no recorded baseline for it.",
+      "use_in_your_work": "Cheap on-device 'confidence learning' for a binary-ish signal: keep a ternary prototype that tolerates noisy observations, with no floating point and no backpropagation.",
+      "honest_limits": "The program's accuracy figure is dot/active-count of the same vector, so a learner that over-activates is not penalised by it (active dims reach 10,240 of 10,240 while the target has 5,128): it measures recall of the target, not precision. The run is single-target and seeded. No timing claim is made from this test.",
+      "cpu_flags": [
+        "avx2"
+      ],
+      "corrections": []
+    },
+    {
+      "id": "V2",
+      "title": "Python <-> C hypervector layout gate with a mutation check",
+      "claim": "Cross-language layout: +1 4,644 / -1 1,451 / active 6,095 / cross-dot 85 identical in numpy and C; the old zero-first packing is detected",
+      "kind": "run",
+      "verify": "D=$(mktemp -d); trap 'rm -rf $D' EXIT; cp xlang_test.py vsa_bus_client.py vsa_xlang_test.c vsa_kernel.c vsa_kernel.h $D/ && gcc -O2 -mavx2 -std=gnu11 -o $D/vsa_xlang_test $D/vsa_xlang_test.c $D/vsa_kernel.c -lrt && cd $D && PYTHONDONTWRITEBYTECODE=1 python3 xlang_test.py | tail -3",
+      "expect": "XLANG-TEST PASS (and 'mutation (old zero-first packing) detected: True')",
+      "evidence": [
+        "xlang_test.py",
+        "vsa_xlang_test.c",
+        "vsa_bus_client.py",
+        "README.md",
+        "DOSSIER.md"
+      ],
+      "runtime_s": 5,
+      "needs": [
+        "gcc",
+        "python3",
+        "numpy"
+      ],
+      "what_it_means": "Python writes two known ternary hypervectors into a private shared-memory segment; the C code reads them with its own struct and reports how many +1, -1 and active dimensions each has and their dot product; these must equal numpy's numbers exactly (4,644 / 1,451 / 6,095 and a cross-dot of 85). The test also repeats the check with the old, wrong packing order and requires that to be caught, so the test is shown able to fail. Passing proves Python and C agree on the byte layout of a hypervector. It does not prove the maths on top of it is right.",
+      "how_we_got_it": "xlang_test.py compiles nothing itself: it needs vsa_xlang_test built from vsa_xlang_test.c and vsa_kernel.c (Makefile target xlang-check). The verify command copies the five files to a temp directory, builds there and runs it, so nothing is written into the clone. It uses private segments /vsa_xlang_bus and /vsa_xlang_seq, never the live bus. README.md records it as VERIFIED 2026-09-25; the host there was an Intel i5-8365U (DOSSIER).",
+      "use_in_your_work": "Any time two languages share a bit-packed buffer: this pattern (write known data from one side, read it from the other, and prove the test can fail) catches silent plane-swap bugs that self-consistency checks pass.",
+      "honest_limits": "Needs a Linux /dev/shm. Covers the layout only, on two fixed vectors.",
+      "cpu_flags": [
+        "avx2"
+      ],
+      "corrections": []
+    },
+    {
+      "id": "V3",
+      "title": "Bus reader/writer: zero torn reads under concurrent seqlock access",
+      "claim": "Torn reads under concurrency: 0 (DOSSIER 0 / 200,000 reads; this test reports its own read count)",
+      "kind": "run",
+      "verify": "D=$(mktemp -d); trap 'rm -rf $D' EXIT; gcc -O2 -mavx2 -std=gnu11 -o $D/bus vsa_bus_test.c vsa_bus_rw.c vsa_slot_registry.c vsa_kernel.c -lm -lpthread && $D/bus > $D/o.log; rc=$?; grep -E 'PASS: Zero torn reads' $D/o.log; test $rc -eq 0",
+      "expect": "PASS: Zero torn reads in <N> reads (N varies per run; 17,654 on the loaded verification host)",
+      "evidence": [
+        "vsa_bus_test.c",
+        "vsa_bus_rw.c",
+        "vsa_slot_registry.c",
+        "DOSSIER.md",
+        "docs/SLOT-REGISTRY.md"
+      ],
+      "runtime_s": 10,
+      "needs": [
+        "gcc",
+        "pthreads",
+        "Linux /dev/shm"
+      ],
+      "what_it_means": "One writer process and one reader run against each other for two seconds on a private shared-memory bus while the reader checks every vector it reads against a version number (a seqlock); the test counts reads whose contents were a mix of two writes. Passing proves that, in this run, none was torn and the program's overall verdict is PASS. It does not prove the absence of races on other CPUs with weaker memory ordering than x86.",
+      "how_we_got_it": "vsa_bus_test.c (built as in the Makefile: vsa_bus_test.c vsa_bus_rw.c vsa_slot_registry.c vsa_kernel.c -lm -lpthread) creating segments named /dev/shm/vsa_test_*_<pid>. DOSSIER.md records 0 / 200,000 reads on an Intel i5-8365U on 09-24; the number of reads in a two-second run depends on the machine.",
+      "use_in_your_work": "Sharing hypervectors or any fixed-size record between processes through shared memory without a lock, with a test you can run on your own CPU.",
+      "honest_limits": "x86 only as tested. Other files in the repo, nomic_vsa_test.cpp and ipc_speed_test.cpp, are not rows here: they open the live bus /dev/shm/vsa_matrix_bus (ipc_speed_test writes over it), so they cannot be run safely from a fresh clone; the proposed tests/run_tests.sh compiles them only. vsa_selftest (make check) also needs the live bus and zeroes it.",
+      "cpu_flags": [
+        "avx2"
+      ],
+      "corrections": []
+    },
+    {
+      "id": "V4",
+      "title": "Bit-sliced majority bundle equals the scalar bundle on all trials",
+      "claim": "vsa_bundle_bench: bit-sliced bundling matches the scalar kernel on 1000/1000 trials at n = 3, 8, 16 and 64 inputs, and is faster (speedups are printed)",
+      "kind": "run",
+      "verify": "D=$(mktemp -d); trap 'rm -rf $D' EXIT; gcc -O2 -mavx2 -std=gnu11 -w -o $D/b vsa_bundle_bench.c vsa_bundle_bitsliced.c vsa_kernel.c -lm && $D/b > $D/o.log; rc=$?; grep -E 'correctness|^PASS' $D/o.log; test $rc -eq 0 && grep -q 'bit-sliced bundle matches scalar' $D/o.log",
+      "expect": "four 'correctness n=.. : 1000/1000 PASS' lines and 'PASS - bit-sliced bundle matches scalar on all trials'",
+      "evidence": [
+        "vsa_bundle_bench.c",
+        "vsa_bundle_bitsliced.c",
+        "vsa_bundle_bitsliced.h",
+        "vsa_kernel.c"
+      ],
+      "runtime_s": 30,
+      "needs": [
+        "gcc",
+        "x86-64 with AVX2"
+      ],
+      "what_it_means": "Bundling is the majority vote of many hypervectors into one. The bench computes it two ways, the plain per-dimension counter and a bit-sliced one that handles 64 dimensions per instruction, on 1,000 random trials for each of 3, 8, 16 and 64 inputs, and requires identical output. Passing proves the fast version is exact on those cases. The speed-up it also prints (about 6.9x at n=16 and 11.6x at n=64 on the loaded verification host) depends on the machine and is not asserted.",
+      "how_we_got_it": "vsa_bundle_bench.c built as in the Makefile (-O2 -mavx2). Compile emits one incompatible-pointer warning on vsa_bundle_bench.c line 80, silenced with -w here; the build otherwise succeeds. Machine and date of the original run are not recorded in the repo; this check was run on 2026-10-16.",
+      "use_in_your_work": "Combining many sensor readings, votes or feature vectors into one prototype quickly and exactly, e.g. a 'known-good state' profile for anomaly detection.",
+      "honest_limits": "Random inputs only; ties are decided as the kernel decides them. Speed is not asserted.",
+      "cpu_flags": [
+        "avx2"
+      ],
+      "corrections": []
+    },
+    {
+      "id": "V5",
+      "title": "Phase kernel with int8 pshufb clean-up agrees with the float path",
+      "claim": "Phase argmax over a 1,000-entry codebook: ~0.525 us per codevector (float path ~8 us), 200/200 agreement with float (DOSSIER 09-27)",
+      "kind": "run",
+      "verify": "D=$(mktemp -d); trap 'rm -rf $D' EXIT; gcc -O2 -mavx2 -std=gnu11 -o $D/i vsa_phase_int8_test.c vsa_phase_int8.c vsa_phase.c -lm && $D/i > $D/o.log; rc=$?; grep -E 'int8_scalar==int8_avx2|INT8-CONFORM-OK|pshufb' $D/o.log | tail -4; test $rc -eq 0 && grep -q INT8-CONFORM-OK $D/o.log",
+      "expect": "'int8_scalar==int8_avx2 3000/3000 (must be 3000)' and INT8-CONFORM-OK",
+      "evidence": [
+        "vsa_phase_int8_test.c",
+        "vsa_phase_int8.c",
+        "vsa_phase.c",
+        "docs/SEALED-METRIC.md",
+        "DOSSIER.md"
+      ],
+      "runtime_s": 90,
+      "needs": [
+        "gcc",
+        "x86-64 with AVX2"
+      ],
+      "what_it_means": "The int8 scalar and the AVX2 pshufb versions of the phase clean-up (finding the nearest codeword on a 16-phase circle) must agree on all 3,000 trials, and agree with the float version on 2,980 of 3,000 trials at K=16 on the verification host (the test does not require 3,000). Passing proves the integer path is a faithful replacement for the float path within that tolerance. The test also prints the per-codevector time and its budget (1.25 us): on the loaded verification host the AVX2 path took 2.688 us, over budget, and the test still reports conformance because speed is printed, not asserted.",
+      "how_we_got_it": "vsa_phase_int8_test.c with vsa_phase_int8.c and vsa_phase.c, as in the Makefile. The DOSSIER figure (~0.525 us, 200/200) is from an Intel i5-8365U on 09-27 and was not reproduced here: the verification host was under heavy load. The float-path sibling vsa_phase_test fails its 1.25 us speed bar by design (README / Makefile note; SEALED-METRIC Amendment A) and is not a row.",
+      "use_in_your_work": "Fast nearest-phase lookup for periodic signals (angles, clocks, cyclic indices) with integer-only code.",
+      "honest_limits": "The speed claim is not verified by this row; the conformance claim is. Needs a quiet AVX2 machine to see the DOSSIER timing.",
+      "cpu_flags": [
+        "avx2"
+      ],
+      "corrections": []
+    },
+    {
+      "id": "V6",
+      "title": "Trust kernel: barycenter collapse detected at 100% specificity and sensitivity",
+      "claim": "Barycenter collapse detection: 100% specificity at 100% sensitivity over 4,000 trials (DOSSIER); G1 3000/3000, G2 1000/1000, integrity channel fired 0 times, API disagreements 0",
+      "kind": "run",
+      "verify": "D=$(mktemp -d); trap 'rm -rf $D' EXIT; gcc -O2 -mavx2 -std=gnu11 -o $D/t vsa_trust_test.c vsa_trust.c vsa_kernel.c -lm && $D/t > $D/o.log; rc=$?; grep -E '^G1 specificity|^G2 sensitivity|^PASS' $D/o.log | cut -c1-80; test $rc -eq 0 && tail -1 $D/o.log | grep -qx PASS",
+      "expect": "G1 specificity = 3000/3000, G2 sensitivity = 1000/1000, final line PASS",
+      "evidence": [
+        "vsa_trust_test.c",
+        "vsa_trust.c",
+        "vsa_trust.h",
+        "docs/SEALED-METRIC.md",
+        "DOSSIER.md"
+      ],
+      "runtime_s": 300,
+      "needs": [
+        "gcc",
+        "x86-64 with AVX2"
+      ],
+      "what_it_means": "The trust kernel classifies a bundle as a single pattern, metastable or collapsed to the global average (barycenter). Thresholds were fixed in docs/SEALED-METRIC.md before the test was written. The test builds 4,000 stimuli and requires the barycenter case to be separated at over 99% specificity (it reaches 3000/3000 and 1000/1000), with the integrity channel silent. Passing proves the classifier meets the pre-registered bar on seeded synthetic stimuli. It does not show it works on real embeddings.",
+      "how_we_got_it": "vsa_trust_test.c (seed 0x5EED5EED0002) with vsa_trust.c and vsa_kernel.c, as in the Makefile. It prints an elapsed time: 309 s wall (95 s CPU) on a host under load average about 30 on 2026-10-16; on an idle machine expect about 2 minutes. The program's own verdict line is the last line, PASS.",
+      "use_in_your_work": "Telling a fused/averaged memory from a real retrieval, so a lookup that has collapsed to 'everything blended' is flagged instead of answered.",
+      "honest_limits": "Slowest row; wall time depends strongly on machine load. Synthetic stimuli (seeded).",
+      "cpu_flags": [
+        "avx2"
+      ],
+      "corrections": []
+    }
+  ]
+}

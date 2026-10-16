@@ -1,5 +1,11 @@
 # VSA Matrix Core
 
+<!-- status-badges (REPO-ACCESS-C) -->
+[![status: pre-alpha (under development)](https://img.shields.io/badge/status-pre--alpha%20%28under%20development%29-orange)](STATUS.md) **Status: pre-alpha, under development** — what works today, what is untested and what failed: [`STATUS.md`](STATUS.md)
+
+[![defensive publication: DOI 10.5281/zenodo.23282124](https://img.shields.io/badge/defensive%20publication-DOI%2010.5281%2Fzenodo.23282124-blue)](https://doi.org/10.5281/zenodo.23282124) **Defensive publication:** [`TECHNICAL-DISCLOSURE.md`](TECHNICAL-DISCLOSURE.md) · DOI [10.5281/zenodo.23282124](https://doi.org/10.5281/zenodo.23282124)
+<!-- /status-badges -->
+
 Ternary Vector Symbolic Architecture kernel and shared-memory blackboard for the
 sovereign fleet. C/C++ with a POSIX `/dev/shm` bus, AVX2 SIMD, no external deps.
 

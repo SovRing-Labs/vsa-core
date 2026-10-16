@@ -1,8 +1,9 @@
 # vsa-core
 
-> Ternary Vector Symbolic Architecture kernel and shared-memory blackboard for the sovereign fleet.
+> Ternary vector-symbolic kernel (10,240-dim, two bitplanes) and a POSIX shared-memory blackboard with a seqlock, AVX2 SIMD, phase kernel and trust classifier; C/C++ with a Python client.
 
 Setup: `git clone --depth 1 https://github.com/SovRing-Labs/vsa-core && cd vsa-core && python3 -m venv .venv && . .venv/bin/activate && python -m pip install -q numpy && make -s && python3 xlang_test.py` (expect: PASS).
+Status: pre-alpha, under development — read STATUS.md before relying on a number.
 Licence: PolyForm Small Business 1.0.0 OR PolyForm Noncommercial 1.0.0 (free trial for evaluation).
 
 ## Docs
