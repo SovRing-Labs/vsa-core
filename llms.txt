@@ -1,0 +1,20 @@
+# vsa-core
+
+> Ternary Vector Symbolic Architecture kernel and shared-memory blackboard for the sovereign fleet.
+
+Setup: `git clone --depth 1 https://github.com/SovRing-Labs/vsa-core && cd vsa-core && python3 -m venv .venv && . .venv/bin/activate && python -m pip install -q numpy && make -s && python3 xlang_test.py` (expect: PASS).
+Licence: PolyForm Small Business 1.0.0 OR PolyForm Noncommercial 1.0.0 (free trial for evaluation).
+
+## Docs
+- [README.md](https://raw.githubusercontent.com/SovRing-Labs/vsa-core/main/README.md)
+- [DOSSIER.md](https://raw.githubusercontent.com/SovRing-Labs/vsa-core/main/DOSSIER.md)
+- [TECHNICAL-DISCLOSURE.md](https://raw.githubusercontent.com/SovRing-Labs/vsa-core/main/TECHNICAL-DISCLOSURE.md)
+- [PROVENANCE.md](https://raw.githubusercontent.com/SovRing-Labs/vsa-core/main/PROVENANCE.md)
+- [LICENSING.md](https://raw.githubusercontent.com/SovRing-Labs/vsa-core/main/LICENSING.md)
+- [CITATION.cff](https://raw.githubusercontent.com/SovRing-Labs/vsa-core/main/CITATION.cff)
+- [AGENTS.md](https://raw.githubusercontent.com/SovRing-Labs/vsa-core/main/AGENTS.md)
+- [STATUS.md](https://raw.githubusercontent.com/SovRing-Labs/vsa-core/main/STATUS.md)
+- [suite.json](https://raw.githubusercontent.com/SovRing-Labs/vsa-core/main/suite.json)
+
+## Optional
+- [SovRing umbrella (all repos, MCP setup)](https://github.com/SovRing-Labs/SovRing)
